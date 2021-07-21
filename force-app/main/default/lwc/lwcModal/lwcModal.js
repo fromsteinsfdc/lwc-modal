@@ -168,13 +168,15 @@ export default class LwcModal extends LightningElement {
         for (let el of this.focusableElements) {            
             el.dataset.focusIndex = index;
             index++;
-            el.addEventListener('focus', (e) => { this.handleElementFocus(e) });
+            // el.addEventListener('focus', (e) => { this.handleElementFocus(e) });
+            el.addEventListener('focus', this.handleElementFocus);
         }
     }
 
     addButtonListeners() {
         for (let el of this.buttons) {
-            el.addEventListener('click', (e) => { this.handleButtonClick(e) });
+            // el.addEventListener('click', (e) => { this.handleButtonClick(e) });
+            el.addEventListener('click', this.handleButtonClick);
         }
     }
 
@@ -185,7 +187,7 @@ export default class LwcModal extends LightningElement {
             this.focusableElements[this.focusIndex].focus();
     }
 
-    handleButtonClick(event) {
+    handleButtonClick = (event) => {
         // console.log('in handle buttonclick');
         let buttonValue = event.currentTarget.value;
         // console.log('buttonValue = '+ buttonValue);
@@ -198,7 +200,7 @@ export default class LwcModal extends LightningElement {
         }
     }
 
-    handleElementFocus(event) {
+    handleElementFocus = (event) => {
         // console.log('setting focus in '+ event.currentTarget.tagName +' to '+ event.currentTarget.dataset.focusIndex);
         this.focusIndex = event.currentTarget.dataset.focusIndex;
     }
