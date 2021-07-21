@@ -1,0 +1,83 @@
+<template>
+    <div class="slds-theme_default">
+        <template if:false={items.length}>
+            <p class="slds-p-around_small">
+                There aren't any items in your list yet. Click "Add item" to add one!
+            </p>
+        </template>
+        <template if:true={items.length}>
+
+            <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-p-around_small">
+                <div class="slds-col slds-size_1-of-1 slds-box slds-grid">
+                    <div class="slds-col slds-size_1-of-1 slds-grid slds-gutters slds-text-title_bold">
+                        <div class="slds-col slds-size_1-of-3">
+                            Name
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            Unique ID
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            Current position
+                        </div>
+                    </div>
+                </div>
+                <template iterator:item={items}>
+                    <div class="rowContainer slds-col slds-size_1-of-1 slds-box slds-grid slds-clearfix slds-p-right_xx-large"
+                        key={item.value}>
+                        <div class="slds-col slds-size_1-of-3">
+                            {item.value.name}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            {item.value.id}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            {item.index}
+                        </div>
+
+                        <div class="rowActions slds-p-right_xx-large slds-m-right_xx-large slds-float_right">
+                            <lightning-button-icon icon-name="utility:delete" variant="bare" onclick={handleDeleteClick}
+                                data-index={item.index} data-name={item.value.name} class="slds-p-right_xx-large slds-m-right_xx-large">
+                            </lightning-button-icon>
+                        </div>
+                    </div>
+
+                </template>
+            </div>
+        </template>
+        <div class="slds-p-around_small">
+            <lightning-button label="Add item" variant="brand" onclick={handleAddItemClick} class="slds-p-around_small">
+            </lightning-button>
+            <lightning-button label="What is this?" onclick={handleExplainerClick} class="slds-p-around_small">
+            </lightning-button>
+        </div>
+
+        <c-lwc-modal class="explainer" header="What is this?">
+            <h2 class="slds-text-title_bold slds-align_absolute-center">This is a demo of the new lwcModal component.
+            </h2>
+            <div class="slds-p-around_small">
+                <p class="slds-p-vertical_xx-small">This demo features 3 different uses of
+                    the lwcModal component. There is this explainer modal, a
+                    confirmation
+                    modal when you attempt to delete a list item, and a custom configuration modal for adding new list
+                    items.</p>
+                <p class="slds-p-vertical_xx-small">To add items to your list, click the "Add
+                    item" button and type any text into the prompt that appears.
+                    Your list can consist of grocery items, your favourite pet names, or anything you think of. This is
+                    just
+                    a demo after all 🚀</p>
+                <p class="slds-p-vertical_xx-small">If you're reading this I probably sent this to you personally (or, let's be real, you're probably me), but if not you can reach me at david.fromstein@salesforce.com.</p>
+            </div>
+            <!-- <div slot="customButtons">
+            <lightning-button class="customButton" label="Delete explainer" onclick={handleExplainerConfirmClick}></lightning-button>
+        </div> -->
+        </c-lwc-modal>
+
+        <c-lwc-modal class="addItem" header="Add Item" confirm-button-label="Save" validate-on-confirm=true
+            onbuttonclick={handleAddItemConfirm} onconfirm={handleAddItemConfirm}>
+            <lightning-input label="Item name" required></lightning-input>
+        </c-lwc-modal>
+
+        <c-lwc-modal class="confirmation" confirmation={confirmation} onbuttonclick={handleConfirmationButtonClick}>
+        </c-lwc-modal>
+    </div>
+</template>

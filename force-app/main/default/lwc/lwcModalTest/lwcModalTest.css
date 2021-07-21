@@ -1,0 +1,8 @@
+lightning-button-icon {
+    /* opacity: 0; */
+    transition: opacity 0.2s;
+}
+
+.rowContainer:hover lightning-button-icon {
+    opacity: 1;
+}

@@ -3,7 +3,6 @@ const ESC_KEY_CODE = 27;
 const ESC_KEY_STRING = 'Escape';
 const TAB_KEY_CODE = 9;
 const TAB_KEY_STRING = 'Tab';
-const COMPONENT_NAME = 'c-lwc-modal';
 const LIGHTNING_BUTTON = 'lightning-button';
 
 const CANCEL = 'cancel';
@@ -11,27 +10,14 @@ const CONFIRM = 'confirm';
 const DEFAULT_CANCEL_BUTTON_LABEL = 'Cancel';
 const DEFAULT_CONFIRM_BUTTON_LABEL = 'Confirm';
 const DEFAULT_CONFIRM_BUTTON_VARIANT = 'brand';
-const DEFAULT_HEADER = 'Confirm Action';
+const DEFAULT_HEADER = 'Confirm';
+const CUSTOM_BUTTON_CLASS = 'customButton';
 
-class Observable {
-    constructor(functionThatThrowsValues) {
-        this._functionThatThrowsValues = functionThatThrowsValues;
-      }
-    
-      subscribe(observer) {     
-        return this._functionThatThrowsValues(observer);     
-      }     
-}
+const VALIDATEABLE_COMPONENTS = ['input', 'combobox', 'checkbox', 'dual-listbox', 'radio-group', 'slider'];
+const LIGHTNING_COMPONENT_PREFIX = 'lightning-';
 
 export default class LwcModal extends LightningElement {
-
-    myObservable = new Observable(observer => {
-        setTimeout(() => {
-          observer.next("got data!")
-          observer.complete()
-        }, 1000)
-      })
-      
+    static delegatesFocus = true; // Does this do anything?
 
     /* PUBLIC PROPERTIES */
     @api showModal;
@@ -42,22 +28,43 @@ export default class LwcModal extends LightningElement {
     @api confirmButtonLabel;
     @api confirmButtonVariant = DEFAULT_CONFIRM_BUTTON_VARIANT
     @api customButtons; // Reserved for future use
-
     @api isDefault;
+    @api validateOnConfirm;
 
-    @track focusableElements = [];
-    @track buttons = [];    
-    focusIndex = 0;
+    @api focusSelectorString;
+
+    /* PUBLIC GETTERS/SETTERS */
+    @api 
+    get isConfirmationModal() {
+        return this._isConfirmationModal;
+    }
+    set isConfirmationModal(isConfirmationModal) {
+        this._isConfirmationModal = isConfirmationModal;
+        // console.log('isConfirmationModal', isConfirmationModal);
+    }
+    _isConfirmationModal;
+
+    @api 
+    get focusIndex() {
+        return this._focusIndex;
+    }
+    set focusIndex(newIndex) {
+        console.log('focusIndex is being set to '+ newIndex);
+        this._focusIndex = newIndex;
+        // let focusElement = this.focusableElements[this._focusIndex];
+        // focusElement.focus();
+    }
+    _focusIndex = 0;
 
     @api
     get confirmation() {
         return this._confirmation;
     }
     set confirmation(confirmation) {
-        // console.log('in set confirmation: '+ JSON.stringify(confirmation));
         this._confirmation = confirmation || {};
         this.header = confirmation.header || DEFAULT_HEADER;
         this.bodyText = confirmation.text || this.bodyText;
+        console.log('confirmation.cancelButtonLabel = '+ confirmation.cancelButtonLabel);
         this.cancelButtonLabel = confirmation.cancelButtonLabel || DEFAULT_CANCEL_BUTTON_LABEL;
         this.confirmButtonLabel = confirmation.confirmButtonLabel || DEFAULT_CONFIRM_BUTTON_LABEL;
         this.confirmButtonVariant = confirmation.confirmButtonVariant || DEFAULT_CONFIRM_BUTTON_VARIANT;
@@ -71,9 +78,183 @@ export default class LwcModal extends LightningElement {
     }
 
     @api close() {
-        this.showModal = false;
+        for (let el of this.focusableElements) {            
+            // el.removeEventListener('focus', (e) => { this.handleElementFocus(e) });
+            let newEl = el.cloneNode(true);
+            let parentEl = el.parentNode;
+            if (parentEl) {
+                console.log(el.tagName +' parentNode is '+ parentEl.tagName);
+            }
+        }
+
+        this.showModal = false;        
     }
 
+    @api
+    focusElement(el) {
+        console.log('in focusElement');
+        if (el) {
+            console.log('focusing on '+ el);
+            el.focus();
+            return true;
+        }
+        return false;
+    }
+
+    @api
+    focusSelector(selector) {
+        this.updateFocusableElements();
+        console.log('In focusSelector, selector = '+ selector);
+        const selectedElement = this.querySelector(selector);
+        console.log('selectedElement = '+ selectedElement);
+        if (selectedElement && selectedElement.tabIndex >= 0 && !selectedElement.disabled) {
+            selectedElement.focus();
+            return true;
+        }
+        return false;
+    }   
+
+    @api validate() {
+        // let els = VALIDATEABLE_COMPONENTS.map(tagName => this.querySelectorAll(LIGHTNING_COMPONENT_PREFIX + tagName))
+        let allValid = true;
+        for (let el of this.querySelector(LIGHTNING_COMPONENT_PREFIX + tagName)) {
+            allValid = allValid && el.reportValidity();
+        }
+        return allValid;
+    }
+
+    /* PRIVATE PROPERTIES */
+    @track focusableElements = [];
+    @track buttons = [];    
+    cancelValue = CANCEL;
+    confirmValue = CONFIRM;
+    rendered;
+
+    renderedCallback() {
+        if (!this.rendered && this.showModal) {
+            this.rendered = true;
+            this.loadModal();                
+        } else if (this.focusSelectorString) {
+            console.log('in renderedCallback, focusSelectorString = '+ this.focusSelectorString);
+            this.focusSelector(this.focusSelectorString);
+            this.focusSelectorString = null;
+        }
+    }
+
+    loadModal() {
+        // this.updateFocusableElements();
+        this.focusIndex = 0;
+        this.setFocus();
+    }
+
+    isFocusable(el) {
+        return el.tabIndex >= 0 && !el.disabled;
+    }
+
+    updateFocusableElements() {
+        const focusableElements = [...this.querySelectorAll('*')].filter(el => this.isFocusable(el));   // Select all slot elements that can receive focus (tabIndex >= 0) and are not disabled
+        const slotContentElements = focusableElements.filter(el => !el.classList.contains(CUSTOM_BUTTON_CLASS));    // Select the ones not marked with the custom button class
+        const slotCustomButtons = focusableElements.filter(el => el.classList.contains(CUSTOM_BUTTON_CLASS));   // Select the ones marked as custom buttons
+        const standardButtons = this.template.querySelectorAll(LIGHTNING_BUTTON);   // Select the standard buttons: cancel and (if present) confirm
+        this.buttons = [...standardButtons, ...slotCustomButtons];  // Append any custom buttons after the standard buttons
+        this.focusableElements = [...slotContentElements, ...this.buttons]; // Ordering focusable elements so the tab order is: slot content elements, standard buttons, slot custom buttons   
+        // console.log('Finished updateFocusableElements. There are '+ standardButtons.length +' standard buttons, '+ slotCustomButtons.length +' custom buttons, and '+ slotContentElements.length +' focusable slot elements');
+        this.addButtonListeners();
+        this.addFocusListeners();
+    }
+
+    addFocusListeners() {
+        let index = 0;
+        for (let el of this.focusableElements) {            
+            el.dataset.focusIndex = index;
+            index++;
+            el.addEventListener('focus', (e) => { this.handleElementFocus(e) });
+        }
+    }
+
+    addButtonListeners() {
+        for (let el of this.buttons) {
+            el.addEventListener('click', (e) => { this.handleButtonClick(e) });
+        }
+    }
+
+
+    setFocus() {
+        this.updateFocusableElements();
+        if (this.focusableElements[this.focusIndex])
+            this.focusableElements[this.focusIndex].focus();
+    }
+
+    handleButtonClick(event) {
+        // console.log('in handle buttonclick');
+        let buttonValue = event.currentTarget.value;
+        // console.log('buttonValue = '+ buttonValue);
+        this.dispatchEvent(new CustomEvent('buttonclick', { detail: buttonValue }));
+        if (buttonValue === this.cancelValue) {
+            this.cancel();
+        } else if (buttonValue === this.confirmValue) {            
+            if (!this.validateOnConfirm || this.validate())
+                this.dispatchEvent(new CustomEvent(this.confirmValue, { detail: buttonValue }));
+        }
+    }
+
+    handleElementFocus(event) {
+        // console.log('setting focus in '+ event.currentTarget.tagName +' to '+ event.currentTarget.dataset.focusIndex);
+        this.focusIndex = event.currentTarget.dataset.focusIndex;
+    }
+
+    handleModalFocus(event) {
+        // console.log('in handleModalFocus');
+        // console.log('currentTarget = '+ event.currentTarget.tagName, 'target = '+ event.target.tagName);
+    }
+
+    dispatchButtonclick(buttonValue) {
+        this.dispatchEvent(new CustomEvent('buttonclick', { detail: buttonValue }));
+    }
+
+    cancel() {
+        this.dispatchEvent(new CustomEvent(this.cancelValue));
+        this.close();
+    }
+
+    handleSlotChange (e) {
+        // console.log("New slotted content has been added or removed!");
+     }
+     
+     handleKeyDown(event) {
+        if (event.keyCode === ESC_KEY_CODE || event.code === ESC_KEY_STRING) {
+            event.stopPropagation();
+            event.preventDefault();
+            // this.close();
+            this.cancel();
+        } else if (event.keyCode === TAB_KEY_CODE || event.code === TAB_KEY_STRING) {
+            console.log('in tab keydown');
+            event.stopPropagation();
+            event.preventDefault();
+            let newIndex = Number(this.focusIndex) + (event.shiftKey ? -1 : 1);
+            console.log('newIndex = '+ newIndex, 'focusEls.length = '+ this.focusableElements.length);
+            if (newIndex >= this.focusableElements.length) {
+                newIndex = 0;
+            } else if (newIndex < 0) {
+                newIndex = this.focusableElements.length - 1;
+            }
+            this.focusIndex = newIndex;
+            this.setFocus();
+        }
+    }
+
+    /* Moved into setFocus()
+    getFocusableElements() {
+        const focusableElements = [...this.querySelectorAll('*')].filter(el => el.tabIndex >= 0 && !el.disabled);
+        const slotContentElements = focusableElements.filter(el => !el.classList.contains(CUSTOM_BUTTON_CLASS));
+        const slotCustomButtons = focusableElements.filter(el => el.classList.contains(CUSTOM_BUTTON_CLASS));
+        const standardButtons = this.template.querySelectorAll(LIGHTNING_BUTTON);
+        this.buttons = [...standardButtons, ...slotCustomButtons];
+        this.focusableElements = [...slotContentElements, ...this.buttons]; // Ordering focusable elements so the tab order is: slot content elements, standard buttons, slot custom buttons           
+    }
+    */
+
+     /* no longer in use
     getNewConfirmation() {
         let getButtons = () => { return this.butons };
         let buttons = this.buttons;
@@ -110,143 +291,11 @@ export default class LwcModal extends LightningElement {
         this.open();
         // console.log('broker = '+ JSON.stringify(this.broker));
         
-        // if (this.broker.rendered) {
-        //     this.getConfirmation();
-        // }
-        
-
         let promise = new Promise((resolve, reject) => {
             //setTimeout(() => resolve("done!"), 3000)
             this.loadModal(resolve, reject).then;
         });
         return promise;
-
-        // let result = await promise;
-        // return result;
-
-        // this.load
-        // return new Promise((resolve, reject) => {
-        //     this.bodyText = details.text;
-        //     this.open();
-        //     this.template.querySelector(LIGHTNING_BUTTON).addEventListener('click', clickEvent => {
-        //         console.log('click!');
-        //         console.log(e.target.value);
-        //         resolve(e.target.value);
-        //     })
-        // })
     }
-
-    /* PRIVATE PROPERTIES */
-    cancelValue = CANCEL;
-    confirmValue = CONFIRM;
-    rendered;
-
-    // returns promise
-    async getConfirmation() {
-
-    }
-
-    renderedCallback() {
-        if (!this.rendered && this.showModal) {
-            this.rendered = true;
-
-            this.loadModal();                
-        }
-    }
-
-    broker = {        
-        rendered: false,
-        requested: false
-    }
-
-    loadModal() {
-        // if (!this.showModal) { this.open(); }
-        // console.log('in loadModal');
-        this.getFocusableElements();
-        this.addButtonListeners();
-    }
-
-    addButtonListeners() {
-        for (let el of this.buttons) {
-            el.addEventListener('click', (e) => { this.handleButtonClick(e) });
-            // el.addEventListener('click', (e) => { resolve(e.target.value) });
-        }
-    }
-
-    getFocusableElements() {
-        // console.log('in gfe');
-        //const allSlotElements = [...this.querySelectorAll('*')];
-        const focusableElements = [...this.querySelectorAll('*')].filter(el => el.tabIndex >= 0 && !el.disabled);
-        const slotContentElements = focusableElements.filter(el => el.parentNode && el.parentNode.tagName.toLowerCase() == COMPONENT_NAME);
-        const slotCustomButtons = focusableElements.filter(el => !el.parentNode || el.parentNode.tagName.toLowerCase() != COMPONENT_NAME);
-        const standardButtons = this.template.querySelectorAll(LIGHTNING_BUTTON);
-        // console.log('standardButtons.length = '+ standardButtons.length);
-        this.buttons = [...standardButtons, ...slotCustomButtons];
-        // console.log('buttons: '+ this.buttons);
-        this.focusableElements = [...slotContentElements, ...this.buttons];        
-        this.focusIndex = 0;
-        // console.log('focus should be on '+ this.focusableElements[this.focusIndex].tagName);
-        this.setFocus();
-        // this.confirmation.rendered = true; // LEGACY from async
-        // console.log('finished gf3');
-        // for (let el of slotCustomButtons) {
-        //     el.addEventListener('click', (e) => { this.handleButtonClick(e) });
-        // }
-    }
-
-    setFocus() {
-        // console.log('setting focus on '+ this.focusIndex);
-        if (this.focusableElements[this.focusIndex])    // why do we need this again?
-            this.focusableElements[this.focusIndex].focus();
-    }
-
-    // handleCancel() {
-    //     this.close();
-    // }
-
-    // handleConfirmClick() {
-    // }
-
-    handleButtonClick(event) {
-        // console.log('in handleButtonClick', this.cancelButtonLabel);
-        let buttonValue = event.target.value;
-        this.dispatchEvent(new CustomEvent('buttonclick', { detail: buttonValue }));
-        if (buttonValue === this.cancelValue) {
-            this.cancel();
-            // this.dispatchEvent(new CustomEvent(this.cancelValue));
-            // this.close();    
-        } else if (buttonValue === this.confirmValue) {
-            this.dispatchEvent(new CustomEvent(this.confirmValue));
-        }
-    }
-
-    dispatchButtonclick(buttonValue) {
-        this.dispatchEvent(new CustomEvent('buttonclick', { detail: buttonValue }));
-
-    }
-
-    cancel() {
-        this.dispatchEvent(new CustomEvent(this.cancelValue));
-        this.close();
-    }
-
-    handleKeyDown(event) {
-        if (event.keyCode === ESC_KEY_CODE || event.code === ESC_KEY_STRING) {
-            // this.close();
-            this.cancel();
-        } else if (event.keyCode === TAB_KEY_CODE || event.code === TAB_KEY_STRING) {
-            event.stopPropagation();
-            event.preventDefault();
-            this.focusIndex += event.shiftKey ? -1 : 1;
-            if (this.focusIndex >= this.focusableElements.length) {
-                this.focusIndex = 0;
-            }
-            if (this.focusIndex < 0) {
-                this.focusIndex = this.focusableElements.length - 1;
-            }
-            this.setFocus();
-        }
-    }
-
-
+    */
 }

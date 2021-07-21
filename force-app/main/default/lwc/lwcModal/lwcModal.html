@@ -1,6 +1,6 @@
 <template>
     <template if:true={showModal}>
-        <section role="dialog" tabindex="0" class="slds-modal slds-fade-in-open" onkeydown={handleKeyDown}>
+        <section role="dialog" tabindex="0" class="slds-modal slds-fade-in-open" onkeydown={handleKeyDown} onfocus={handleModalFocus}>
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
                     <template if:true={header}>
@@ -13,7 +13,7 @@
                 </template>
 
                 <div class="slds-modal__content slds-p-around_medium">
-                    <slot></slot>
+                    <slot onslotchange={handleSlotChange}></slot>
                     {bodyText}
                 </div>
                 <footer class="slds-modal__footer slds-is-relative">
@@ -24,15 +24,20 @@
                         <lightning-button label={confirmButtonLabel} variant={confirmButtonVariant} value={confirmValue}
                             class="slds-p-horizontal_xxx-small"></lightning-button>
                     </template>
-                    <slot name="customButtons">
-                        <!-- User to pass in list of button elements via slot  -->
-                        <!-- <lightning-button label={confirmButtonLabel} variant="brand" onclick={handleSave}
-                        class="slds-p-horizontal_x-small"></lightning-button> -->
+                    <slot name="customButtons"  onfocus={handleModalFocus}>
+                        <!--
+                        User to pass in list of lightning-button elements via slot
+                        Example:
+                        <lightning-button label="My Custom Button Label" variant="brand" onclick={myCustomButtonHandler}
+                        class="slds-p-horizontal_xxx-small"></lightning-button>
+                        -->
                     </slot>
                 </footer>
             </div>
         </section>
-        <div class="slds-backdrop slds-backdrop_open"></div>
+        <template if:false={confirmation.hideBackdrop}>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
     </template>
 
 </template>

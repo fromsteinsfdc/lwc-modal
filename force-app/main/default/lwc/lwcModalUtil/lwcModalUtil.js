@@ -1,5 +1,11 @@
-const getConfirmation2 = (modalEl, details, onconfirm, oncancel) => {
+const CANCEL = 'cancel';
+const CONFIRM = 'confirm';
+
+const getConfirmation = (modalEl, details, onconfirm, oncancel) => {
     console.log('in getConfirmation');
+    console.log('details = '+ JSON.stringify(details));
+
+    console.log('onconfirm = '+ onconfirm);
     let confirmation = {
         onconfirm: onconfirm,
         oncancel: oncancel
@@ -29,4 +35,15 @@ const getModalDetails = (text, confirmButtonLabel, confirmButtonVariant, header,
     }
 }
 
-export { getConfirmation2, getModalDetails }
+const handleConfirmationButtonClick = (event) => {
+    if (event.detail === CANCEL) {
+        if (this.confirmation && this.confirmation.oncancel)
+            this.confirmation.oncancel();
+    } else if (event.detail === CONFIRM) {
+        if (this.confirmation && this.confirmation.onconfirm)
+            this.confirmation.onconfirm();
+        this.defaultModal.close();
+    }
+}
+
+export { getConfirmation, getModalDetails, handleConfirmationButtonClick, CANCEL, CONFIRM }
