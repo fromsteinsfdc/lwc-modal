@@ -1,30 +1,36 @@
 const CANCEL = 'cancel';
 const CONFIRM = 'confirm';
+const STRING = 'string';
+const EVENT_PREFIX = 'on';
 
-const getConfirmation = (modalEl, details, onconfirm, oncancel) => {
-    console.log('in getConfirmation');
-    console.log('details = '+ JSON.stringify(details));
-
-    console.log('onconfirm = '+ onconfirm);
+const getConfirmation = (details, onconfirm, oncancel) => {
     let confirmation = {
         onconfirm: onconfirm,
         oncancel: oncancel
     }
-    console.log('confirmation = '+ JSON.stringify(confirmation));
     if (details) {
-        if (typeof details === 'string') {
+        if (typeof details === STRING) {
             confirmation.text = details;
         } else {
             confirmation.text = details.text;
             confirmation.confirmButtonLabel = details.confirmButtonLabel;
             confirmation.confirmButtonVariant = details.confirmButtonVariant;
+            confirmation.cancelButtonLabel = details.cancelButtonLabel;
             confirmation.header = details.header;
         }
     }
-    modalEl.open();
     return confirmation;
 }
 
+const handleConfirmationButtonClick = (event, confirmation) => {
+    const confirmationResult = event.detail;
+    const eventName = EVENT_PREFIX + confirmationResult;
+    if (confirmation[eventName]) {
+        confirmation[eventName]();
+    }
+}
+
+// Deprecated
 const getModalDetails = (text, confirmButtonLabel, confirmButtonVariant, header, cancelButtonLabel) => {
     return {
         text: text,
@@ -32,17 +38,6 @@ const getModalDetails = (text, confirmButtonLabel, confirmButtonVariant, header,
         confirmButtonVariant: confirmButtonVariant,
         header: header,
         cancelButtonLabel: cancelButtonLabel
-    }
-}
-
-const handleConfirmationButtonClick = (event) => {
-    if (event.detail === CANCEL) {
-        if (this.confirmation && this.confirmation.oncancel)
-            this.confirmation.oncancel();
-    } else if (event.detail === CONFIRM) {
-        if (this.confirmation && this.confirmation.onconfirm)
-            this.confirmation.onconfirm();
-        this.defaultModal.close();
     }
 }
 
