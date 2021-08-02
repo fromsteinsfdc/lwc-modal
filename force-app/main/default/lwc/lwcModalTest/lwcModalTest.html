@@ -6,18 +6,17 @@
             </p>
         </template>
         <template if:true={items.length}>
-
             <div class="slds-grid slds-wrap slds-grid_vertical-align-center slds-p-around_small">
                 <div class="slds-col slds-size_1-of-1 slds-box slds-grid">
                     <div class="slds-col slds-size_1-of-1 slds-grid slds-gutters slds-text-title_bold">
+                        <div class="slds-col slds-size_1-of-3">
+                            Current Index
+                        </div>
                         <div class="slds-col slds-size_1-of-3">
                             Name
                         </div>
                         <div class="slds-col slds-size_1-of-3">
                             Unique ID
-                        </div>
-                        <div class="slds-col slds-size_1-of-3">
-                            Current position
                         </div>
                     </div>
                 </div>
@@ -25,18 +24,18 @@
                     <div class="rowContainer slds-col slds-size_1-of-1 slds-box slds-grid slds-clearfix"
                         key={item.value}>
                         <div class="slds-col slds-size_1-of-3">
+                            {item.index}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
                             {item.value.name}
                         </div>
                         <div class="slds-col slds-size_1-of-3">
                             {item.value.id}
                         </div>
-                        <div class="slds-col slds-size_1-of-3">
-                            {item.index}
-                        </div>
 
-                        <div class="rowActions slds-p-right_xx-large slds-m-right_xx-large slds-float_right">
+                        <div class="rowActions">
                             <lightning-button-icon icon-name="utility:delete" variant="bare" onclick={handleDeleteClick}
-                                data-index={item.index} data-name={item.value.name} class="slds-p-right_xx-large slds-m-right_xx-large">
+                                data-index={item.index} data-name={item.value.name} >
                             </lightning-button-icon>
                         </div>
                     </div>
@@ -51,7 +50,7 @@
             </lightning-button>
         </div>
 
-        <c-lwc-modal class="explainer" header="What is this?">
+        <c-lwc-modal class="explainer">
             <h2 class="slds-text-title_bold slds-align_absolute-center">This is a demo of the new lwcModal component.
             </h2>
             <div class="slds-p-around_small">
@@ -67,13 +66,10 @@
                     a demo after all 🚀</p>
                 <p class="slds-p-vertical_xx-small">If you're reading this I probably sent this to you personally (or, let's be real, you're probably me), but if not you can reach me at david.fromstein@salesforce.com.</p>
             </div>
-            <!-- <div slot="customButtons">
-            <lightning-button class="customButton" label="Delete explainer" onclick={handleExplainerConfirmClick}></lightning-button>
-        </div> -->
         </c-lwc-modal>
 
-        <c-lwc-modal class="addItem" header="Add Item" confirm-button-label="Save" validate-on-confirm=true
-            onbuttonclick={handleAddItemConfirm} onconfirm={handleAddItemConfirm}>
+        <c-lwc-modal class="addItem" header="Add Item" confirm-button-label="Save" validate-on-confirm=true cancel-button-label="No thanks"
+            onconfirm={handleAddItemConfirm}>
             <lightning-input label="Item name" required></lightning-input>
         </c-lwc-modal>
 
